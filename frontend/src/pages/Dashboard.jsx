@@ -8,6 +8,7 @@ const Dashboard = () => {
 
   // Form State
   const [formData, setFormData] = useState({ name: '', email: '', age: '', hobbies: '', bio: '', userId: '' });
+  const [editId, setEditId] = useState(null);
   // Filter State
   const [filters, setFilters] = useState({ name: '', email: '', age: '', search: '', hobbies: '' });
 
@@ -40,25 +41,27 @@ const Dashboard = () => {
     }
   };
 
-  const handleCreateUser = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addLog('POST /users - Opening new client profile...');
+    const isUpdate = !!editId;
+    addLog(`${isUpdate ? 'PUT' : 'POST'} /users - ${isUpdate ? 'Updating existing' : 'Opening new'} client profile...`);
     try {
       const payload = {
         ...formData,
         age: Number(formData.age),
-        hobbies: formData.hobbies.split(',').map(h => h.trim())
+        hobbies: typeof formData.hobbies === 'string' ? formData.hobbies.split(',').map(h => h.trim()) : formData.hobbies
       };
       
-      const res = await fetch('https://aegis-private-bank-5b.onrender.com/users', {
-        method: 'POST',
+      const res = await fetch(`https://aegis-private-bank-5b.onrender.com/users${isUpdate ? `/${editId}` : ''}`, {
+        method: isUpdate ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       
       if (res.ok) {
-        addLog(`SUCCESS: Client portfolio successfully provisioned.`);
+        addLog(`SUCCESS: Client portfolio successfully ${isUpdate ? 'updated' : 'provisioned'}.`);
         setFormData({ name: '', email: '', age: '', hobbies: '', bio: '', userId: '' });
+        setEditId(null);
         fetchUsers();
       } else {
         const err = await res.json();
@@ -67,6 +70,20 @@ const Dashboard = () => {
     } catch (e) {
       addLog(`SYSTEM FAILURE: Could not negotiate transaction.`);
     }
+  };
+
+  const handleEditInit = (u) => {
+    setEditId(u._id);
+    setFormData({
+      name: u.name,
+      email: u.email,
+      age: u.age,
+      hobbies: u.hobbies ? u.hobbies.join(', ') : '',
+      bio: u.bio,
+      userId: u.userId
+    });
+    addLog(`SYS: Loaded ${u.userId} into provisioning form for modification.`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
@@ -126,7 +143,7 @@ const Dashboard = () => {
               <Briefcase size={20} color="var(--primary-navy)"/>
               Client Enrollment
            </h2>
-           <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
              <div>
                 <label className="label-sm" style={{ display: 'block', marginBottom: '6px' }}>Account UUID (Required)</label>
                 <input className="bank-input" type="text" placeholder="e.g. USR-782" required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} />
@@ -158,7 +175,12 @@ const Dashboard = () => {
                 <textarea className="bank-input" placeholder="Executive summary for indexing..." rows="2" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})}></textarea>
              </div>
              
-             <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>Authorize & Provision Account</button>
+             <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>
+                {editId ? 'Update Client Dossier' : 'Authorize & Provision Account'}
+             </button>
+             {editId && (
+                <button type="button" className="btn-tertiary" style={{ alignSelf: 'center', color: 'var(--text-muted)' }} onClick={() => { setEditId(null); setFormData({ name: '', email: '', age: '', hobbies: '', bio: '', userId: '' }); }}>Cancel Update</button>
+             )}
            </form>
         </div>
 
@@ -228,7 +250,8 @@ const Dashboard = () => {
                       <td>{u.age}</td>
                       <td>{u.hobbies?.join(', ')}</td>
                       <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.bio}</td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                         <button className="btn-tertiary" style={{ color: 'var(--accent-gold)' }} onClick={() => handleEditInit(u)}>Update</button>
                          <button className="btn-tertiary" onClick={() => handleDelete(u._id)}>Terminate</button>
                       </td>
                     </tr>
