@@ -25,7 +25,7 @@ const Dashboard = () => {
       if(filters.search) queryParams.append('search', filters.search);
       if(filters.hobbies) queryParams.append('hobbies', filters.hobbies);
 
-      const res = await fetch(`http://localhost:5000/users?${queryParams.toString()}`);
+      const res = await fetch(`https://aegis-private-bank-5b.onrender.com/users?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setUsers(data.data || []);
@@ -50,7 +50,7 @@ const Dashboard = () => {
         hobbies: formData.hobbies.split(',').map(h => h.trim())
       };
       
-      const res = await fetch('http://localhost:5000/users', {
+      const res = await fetch('https://aegis-private-bank-5b.onrender.com/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -73,7 +73,7 @@ const Dashboard = () => {
     addLog(`DELETE /users/${id} - Terminating client profile...`);
     try {
       if(window.confirm('Are you strictly authorized to close this portfolio account?')) {
-        const res = await fetch(`http://localhost:5000/users/${id}`, { method: 'DELETE' });
+        const res = await fetch(`https://aegis-private-bank-5b.onrender.com/users/${id}`, { method: 'DELETE' });
         if (res.ok) {
           addLog('OVERRIDE APPROVED: Record successfully expunged.');
           fetchUsers();
